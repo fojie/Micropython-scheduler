@@ -79,4 +79,3 @@ class Pushbutton(object):
                     if self.false_func:
                         self.false_func(*self.false_func_args)
             yield wf()                                      # Ignore further state changes until switch has settled
-

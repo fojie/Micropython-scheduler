@@ -21,7 +21,7 @@ from switch import Switch                                   # Library supporting
 # HARDWARE 
 # MicroPython board with pin X7 linked to pin X8
 # Optionally provide two pushbuttons wired to be capable of grounding X5 and X6 respectively
-# The interrupt handler pulses pin Y10 to enable timings to be measured with an osclloscope, notably minimum
+# The interrupt handler pulses pin Y10 to enable timings to be measured with an oscilloscope, notably minimum
 # pulse duration and latency
 
 
@@ -32,10 +32,10 @@ def stop(fTim, objSch):                                     # Stop the scheduler
     objSch.stop()
 
 
-def oscillator(freq_hz = 1):                                # Toggles X7 forever.
-     outpin = pyb.Pin(pyb.Pin.board.X7, pyb.Pin.OUT_PP)     # Push pull output pin on X7
-     wf = Timeout(1/(2*freq_hz))
-     while True:
+def oscillator(freq_hz=1):                                 # Toggles X7 forever.
+    outpin = pyb.Pin(pyb.Pin.board.X7, pyb.Pin.OUT_PP)     # Push pull output pin on X7
+    wf = Timeout(1 / (2 * freq_hz))
+    while True:
         outpin.low()
         yield wf()                                          # Duration will be imprecise owing to contention
         outpin.high()
@@ -63,11 +63,11 @@ def irqtest_thread():                                       # Thread blocks on a
     while True:
         result = (yield wf())                               # Wait for the interrupt
         lstLeds[0].toggle()                                 # Toggle LED
-        print("Interrupt recieved ", result)
+        print("Interrupt received ", result)
 
 
 def x5print(*args):
-    print("X5 released " +args[0])                          # Demo of argument passing
+    print("X5 released " + args[0])                         # Demo of argument passing
 
 
 def x6print(*args):
@@ -76,14 +76,14 @@ def x6print(*args):
 
 # USER TEST PROGRAM
 # Runs forever unless you pass a number of seconds
-def test(duration = 0):                                     # Runs oscillator, counts interrupts, responds to switches
+def test(duration=0):                                       # Runs oscillator, counts interrupts, responds to switches
     if duration:
-        print("Test interrupt on pin X8 for {:3d} seconds".format(duration))
+        print("Test interrupt on pin X8 for {:1d} seconds".format(duration))
     objSched = Sched()                                      # Requires jumper between pins X7 and X8
     objSched.add_thread(oscillator(1))                      # 1Hz
     objSched.add_thread(irqtest_thread())
-    Switch(objSched, 'X5', open_func = x5print, open_func_args = ("Red",)) # X5 triggers on open
-    Switch(objSched, 'X6', x6print, ("Yellow",))            # X6 triggers on close
+    Switch(objSched, 'X5', open_func=x5print, open_func_args=("Red",))  # X5 triggers on open
+    Switch(objSched, 'X6', x6print, ("Yellow",))                        # X6 triggers on close
     if duration:
         objSched.add_thread(stop(duration, objSched))
     objSched.run()

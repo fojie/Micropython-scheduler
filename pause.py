@@ -36,7 +36,7 @@ def pauser(objSched, thread):
 
 # USER TEST PROGRAM
 
-def test(duration = 0):
+def test(duration=0):
     objSched = Sched()
     objSched.add_thread(robin("Thread 1"))
     th2 = objSched.add_thread(robin("Thread 2"))

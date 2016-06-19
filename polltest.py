@@ -35,6 +35,7 @@ def stop(fTim, objSch):                                     # Stop the scheduler
     yield from wait(fTim)
     objSch.stop()
 
+
 class Accelerometer(object):
     def __init__(self, accelhw):
         self.accelhw = accelhw
@@ -80,7 +81,7 @@ def accelthread():
 
 # USER TEST PROGRAM
 
-def test(duration = 0):
+def test(duration=0):
     if duration:
         print("Output accelerometer values for {:3d} seconds".format(duration))
     else:
@@ -88,7 +89,7 @@ def test(duration = 0):
     objSched = Sched()
     objSched.add_thread(accelthread())
     if duration:
-        objSched.add_thread(stop(duration, objSched))           # Run for a period then stop
+        objSched.add_thread(stop(duration, objSched))       # Run for a period then stop
     objSched.run()
 
 test(30)

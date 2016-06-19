@@ -21,10 +21,10 @@ def toggle(objLED, time):
 
 
 # USER TEST FUNCTION
-def test(duration = 0):
+def test(duration=0):
     if duration:
-        print("Flash LED's for {:3d} seconds".format(duration))
-    leds = [pyb.LED(x) for x in range(1,5)]                 # Initialise all four on board LED's
+        print("Flash LED's for {:1d} seconds".format(duration))
+    leds = [pyb.LED(x) for x in range(1, 5)]                # Initialise all four on board LED's
     objSched = Sched()                                      # Instantiate the scheduler
     for x in range(4):                                      # Create a thread instance for each LED
         objSched.add_thread(toggle(leds[x], 0.2 + x / 2))
