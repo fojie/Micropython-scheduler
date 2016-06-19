@@ -15,6 +15,8 @@
 # 
 # Date   : 26/07/2012
 
+# Adapted to LCD with 4 * 20 chars 2016-06-19 by Folke Berglund
+
 import pyb
 from usched import Timeout, Roundrobin
 
@@ -23,19 +25,20 @@ from usched import Timeout, Roundrobin
 """
 Pin correspondence of default pinlist. This is supplied as an example
 Name LCD connector Board
-Rs    4   1 red    Y1
-E     6   2        Y2
-D7   14   3        Y3
-D6   13   4        Y4
-D5   12   5        Y5
-D4   11   6        Y6
+Rs    4   1 red    Y3
+R/W   5   -        Gnd
+E     6   2        Y4
+D7   14   3        Y8
+D6   13   4        Y7
+D5   12   5        Y6
+D4   11   6        Y5
 """
 
 # *********************************** GLOBAL CONSTANTS: MICROPYTHON PIN NUMBERS *************************************
 
 # Supply as board pin numbers as a tuple Rs, E, D4, D5, D6, D7
 
-PINLIST = ('Y1','Y2','Y6','Y5','Y4','Y3')
+PINLIST = ('Y3','Y4','Y5','Y6','Y7','Y8')
 
 # **************************************************** LCD CLASS ****************************************************
 # Initstring:
@@ -45,8 +48,8 @@ PINLIST = ('Y1','Y2','Y6','Y5','Y4','Y3')
 # 0x06: Entry mode set: ID = 1 increment S = 0 display shift??
 # 0x01: Clear display, set DDRAM address = 0
 # Original code had timing delays of 50uS. Testing with the Pi indicates that time.sleep() can't issue delays shorter
-# than about 250uS. There also seems to be an error in the original code in that the datasheet specifies a delay of
-# >4.1mS after the first 3 is sent. To simplify I've imposed a delay of 5mS after each initialisation pulse: the time to
+# than about 250 us. There also seems to be an error in the original code in that the datasheet specifies a delay of
+# >4.1mS after the first 3 is sent. To simplify I've imposed a delay of 5ms after each initialisation pulse: the time to
 # initialise is hardly critical. The original code worked, but I'm happier with something that complies with the spec.
 
 # Threaded version:
@@ -61,14 +64,15 @@ PINLIST = ('Y1','Y2','Y6','Y5','Y4','Y3')
 
 class LCD(object):                                          # LCD objects appear as read/write lists
     INITSTRING = (0x33, 0x32, 0x28, 0x0C, 0x06, 0x01)
-    LCD_LINES = (0x80, 0xC0)                                # LCD RAM address for the 1st and 2nd line (0 and 40H)
+    LCD_LINES = (0x80, 0xC0, 0x94, 0xD4)                    # LCD RAM address for the 1st to 4th line
     CHR = True
     CMD = False
-    E_PULSE = 50                                            # Timing constants in us
-    E_DELAY = 50
+    E_PULSE = 50 - 22                                       # Timing constants in us (FB: 22 us overhead)
+    E_DELAY = 50 - 22
 
-    def __init__(self, pinlist, scheduler, cols, rows=2):   # Init with pin nos for enable, rs, D4, D5, D6, D7
+    def __init__(self, pinlist, scheduler, cols, rows=4):   # Init with pin nos for enable, rs, D4, D5, D6, D7
         self.initialising = True
+        #pyb.Pin(pinlist[1]).value(False)                    # FB: Assure pin = low when set to output
         self.LCD_E = pyb.Pin(pinlist[1], pyb.Pin.OUT_PP)    # Create and initialise the hardware pins
         self.LCD_RS = pyb.Pin(pinlist[0], pyb.Pin.OUT_PP)
         self.datapins = [pyb.Pin(pin_name, pyb.Pin.OUT_PP) for pin_name in pinlist[2:]]
@@ -95,11 +99,12 @@ class LCD(object):                                          # LCD objects appear
             pyb.udelay(LCD.E_DELAY)      
 
     def lcd_byte(self, bits, mode):                         # Send byte to data pins: bits = data
+        # print("{:2X}". format(bits), end=" ")
         self.LCD_RS.value(mode)                             # mode = True  for character, False for command
         self.lcd_nybble(bits >> 4)                          # send high bits
         self.lcd_nybble(bits)                               # then low ones
 
-    '''Send string to display line 0 or 1'''
+    '''Send string to display row 0--3'''
     def __setitem__(self, line, message):
         # Strip or pad to width of display. Should use "{0:{1}.{1}}".format("rats", 20)
         message = "%-*.*s" % (self.cols,self.cols, message) # but µP doesn't work with computed format field sizes
