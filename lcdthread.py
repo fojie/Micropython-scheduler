@@ -28,10 +28,10 @@ Name LCD connector Board
 Rs    4   1 red    Y3
 R/W   5   -        Gnd
 E     6   2        Y4
-D7   14   3        Y8
-D6   13   4        Y7
-D5   12   5        Y6
 D4   11   6        Y5
+D5   12   5        Y6
+D6   13   4        Y7
+D7   14   3        Y8
 """
 
 # *********************************** GLOBAL CONSTANTS: MICROPYTHON PIN NUMBERS *************************************
