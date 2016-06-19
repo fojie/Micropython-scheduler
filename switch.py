@@ -14,10 +14,12 @@ from usched import Timeout
 # done by running a thread which runs forever and is done in a way to ensure debouncing.
 # The switch is presumed to be wired from the assigned pin to ground.
 
+
 class Switch(object):
     DEBOUNCETIME = 0.02
+
     def __init__(self, objSched, pinName, close_func=None, close_func_args=(), open_func=None, open_func_args=()):
-        self.pin = pyb.Pin(pinName, pyb.Pin.IN, pyb.Pin.PULL_UP) # Initialise for input, switch to ground
+        self.pin = pyb.Pin(pinName, pyb.Pin.IN, pyb.Pin.PULL_UP)    # Initialise for input, switch to ground
         self.close_func = close_func
         self.close_func_args = close_func_args
         self.open_func = open_func

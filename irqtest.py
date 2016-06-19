@@ -24,11 +24,13 @@ from switch import Switch                                   # Library supporting
 # The interrupt handler pulses pin Y10 to enable timings to be measured with an osclloscope, notably minimum
 # pulse duration and latency
 
+
 # THREADS:
 
 def stop(fTim, objSch):                                     # Stop the scheduler after fTim seconds
     yield fTim
     objSch.stop()
+
 
 def oscillator(freq_hz = 1):                                # Toggles X7 forever.
      outpin = pyb.Pin(pyb.Pin.board.X7, pyb.Pin.OUT_PP)     # Push pull output pin on X7
@@ -39,33 +41,38 @@ def oscillator(freq_hz = 1):                                # Toggles X7 forever
         outpin.high()
         yield wf()
 
+
 class Irq_handler(object):                                  # Using an object to demonstrate communication between
     def __init__(self, lstLed, testpin):                    # the interrupt handler and its thread
         self.lstLed = lstLed
         self.testpin = testpin
 
-    def callback(self, irqno):                              # BEWARE: runs in interrupt's context. MicroPython rules apply
+    def callback(self, irqno):                              # BEWARE: runs in IRQ's context. MicroPython rules apply
         self.testpin.high()                                 # along with normal concurrency caveats
-        self.testpin.low()                                  # Pulse of 6.8uS on Y10
+        self.testpin.low()                                  # Pulse of 6.8 us on Y10
         self.lstLed[1].toggle()
 
+
 def irqtest_thread():                                       # Thread blocks on an interrupt.
-    lstLeds = [pyb.LED(x) for x in range(1,5)]              # Initialise all four on board LED's
+    lstLeds = [pyb.LED(x) for x in range(1, 5)]             # Initialise all four on board LED's
     testpin = pyb.Pin(pyb.Pin.board.Y10, pyb.Pin.OUT_PP)    # Pin Y10 pulsed when handler runs
     mypin = pyb.Pin.board.X8                                # X8 used for interrupt request
     han = Irq_handler(lstLeds, testpin)
-    wf = Pinblock(mypin, pyb.ExtInt.IRQ_FALLING, pyb.Pin.PULL_NONE, han.callback) # Blocking interrupt handler
+    wf = Pinblock(mypin, pyb.ExtInt.IRQ_FALLING, pyb.Pin.PULL_NONE, han.callback)   # Blocking interrupt handler
     count = 0
     while True:
         result = (yield wf())                               # Wait for the interrupt
         lstLeds[0].toggle()                                 # Toggle LED
         print("Interrupt recieved ", result)
 
+
 def x5print(*args):
     print("X5 released " +args[0])                          # Demo of argument passing
 
+
 def x6print(*args):
     print("X6 pressed " + args[0])
+
 
 # USER TEST PROGRAM
 # Runs forever unless you pass a number of seconds

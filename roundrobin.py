@@ -5,6 +5,7 @@
 import pyb
 from usched import Sched
 
+
 # Run on MicroPython board bare hardware
 # THREADS:
 
@@ -13,15 +14,17 @@ def stop(fTim, objSch):                                     # Stop the scheduler
     print('Stopping')
     objSch.stop()
 
+
 def robin(text):
     while True:
         print(text)
         yield
 
+
 # USER TEST PROGRAM
 
-def test(duration = 0):
-    objSched = Sched(True, 1) # heartbeat on LED 1
+def test(duration=0):
+    objSched = Sched(True, 1)                               # heartbeat on LED 1
     objSched.add_thread(robin("Thread 1"))
     objSched.add_thread(robin("Thread 2"))
     objSched.add_thread(robin("Thread 3"))

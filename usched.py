@@ -7,8 +7,10 @@
 import gc
 from utime import ticks_us
 
+
 def _g(): # MicroPython has trouble distinguishing generators from generator functions (#2184)
     yield 1
+
 GeneratorType = type(_g())
 
 # TIMER ACCESS
@@ -17,34 +19,41 @@ TIMERPERIOD = const(0x3fffffff)                 # 1073.74 seconds: 17 minutes 53
 MAXTIME     = const(TIMERPERIOD // 2)           # 536.87 seconds maximum timeout
 MAXSECS     = const(MAXTIME // 1000000)
 
+
 class TimerException(Exception) : pass
 
-def microsWhen(timediff):                       # Expected value of counter in a given no. of uS
+
+def microsWhen(timediff):                       # Expected value of counter in a given no. of us
     if timediff >= MAXTIME:
         raise TimerException()
     return (ticks_us() + timediff) & TIMERPERIOD
 
+
 def after(trigtime):                            # If current time is after the specified value return
-    res = ((ticks_us() - trigtime) & TIMERPERIOD) # the no. of uS after. Otherwise return zero
+    res = ((ticks_us() - trigtime) & TIMERPERIOD) # the no. of us after. Otherwise return zero
     if res >= MAXTIME:
         res = 0
     return res
 
-def microsUntil(tim):                           # uS from now until a specified time (used in Delay class)
-    return ((tim - ticks_us()) & TIMERPERIOD)
 
-def seconds(S):                                 # Utility functions to convert to integer microseconds
-    return int(1000000*S)
+def microsUntil(tim):                           # us from now until a specified time (used in Delay class)
+    return (tim - ticks_us()) & TIMERPERIOD
 
-def millisecs(mS):
-    return int(1000*mS)
+
+def seconds(s):                                 # Utility functions to convert to integer microseconds
+    return int(1000000 * s)
+
+
+def millisecs(ms):
+    return int(1000 * ms)
+
 
 # WAITFOR CLASS
 # This is a base class. User threads should use classes derived from this.
 
 class Waitfor(object):
     def __init__(self):
-        self.uS = 0                             # Current value of timeout in uS
+        self.us = 0                             # Current value of timeout in us
         self.timeout = microsWhen(0)            # End value of microsecond counter when TO has elapsed
         self.forever = False                    # "infinite" time delay flag
         self.irq = None                         # Interrupt vector no
@@ -70,15 +79,15 @@ class Waitfor(object):
         if not self.forever:                    # Check for timeout
             if self.roundrobin:
                 return (0,0,0)                  # Priority value of round robin thread
-            res = after(self.timeout)           # uS after, or zero if not yet timed out in which case we return None
+            res = after(self.timeout)           # us after, or zero if not yet timed out in which case we return None
             if res:                             # Note: can never return (0,0,0) here!
                 return (0, 0, res)              # Nonzero means it's timed out
         return None                             # Not ready for execution
 
-    def _ussetdelay(self, uS=None):             # Reset the timer by default to its last value
-        if uS:                                  # If a value was passed, update it
-            self.uS = uS
-        self.timeout = microsWhen(self.uS)      # Target timer value
+    def _ussetdelay(self, us=None):             # Reset the timer by default to its last value
+        if us:                                  # If a value was passed, update it
+            self.us = us
+        self.timeout = microsWhen(self.us)      # Target timer value
         return self
 
     def setdelay(self, secs=None):              # Method used by derived classes to alter timer values
@@ -92,7 +101,7 @@ class Waitfor(object):
             return self._ussetdelay(seconds(secs))
 
     def __call__(self):                         # Convenience function allows user to yield an updated
-        if self.uS:                             # waitfor object
+        if self.us:                             # waitfor object
             return self._ussetdelay()
         return self
 
@@ -101,16 +110,19 @@ class Waitfor(object):
             self.customcallback(irqno)
         self.interruptcount += 1                # Increments count to enable trigger to operate
 
+
 class Roundrobin(Waitfor):                      # Compatibility only. Use a plain yield
     def __init__(self):
         super().__init__()
         self.roundrobin = True
+
 
 # Intended for device drivers
 class Timeout(Waitfor):
     def __init__(self, tim):
         super().__init__()
         self.setdelay(tim)
+
 
 # yield from wait
 def wait(secs):
@@ -127,9 +139,11 @@ def wait(secs):
         count -= 1
     return (0, 0, overshoot)
 
+
 # Block on an interrupt from a pin subject to optional timeout. pyb specific.
 class Pinblock(Waitfor):
     initialised = False
+
     def __init__(self, pin, mode, pull, customcallback = None, timeout = None):
         super().__init__()
         if not Pinblock.initialised:
@@ -142,31 +156,34 @@ class Pinblock(Waitfor):
             self.forever = True
         else:
             self.setdelay(timeout)
-        self.irq = pyb.ExtInt(pin, mode, pull, self.intcallback) # Porting: needs adaptation
+        self.irq = pyb.ExtInt(pin, mode, pull, self.intcallback)    # Porting: needs adaptation
+
 
 class Poller(Waitfor):
-    def __init__(self, pollfunc, pollfunc_args = (), timeout = None):
+    def __init__(self, pollfunc, pollfunc_args=(), timeout=None):
         super().__init__()
-        self.pollfunc   = pollfunc
+        self.pollfunc = pollfunc
         self.pollfunc_args = pollfunc_args
         if timeout is None:
             self.forever = True
         else:
             self.setdelay(timeout)
 
+
 # SCHEDULER CLASS
 
 class Sched(object):
-    GCTIME = const(50000)
-    HBTIME = const(200000)
-    DEAD = const(0)
+    GCTIME  = const(50000)
+    HBTIME  = const(200000)
+    DEAD    = const(0)
     RUNNING = const(1)
-    PAUSED = const(2)
+    PAUSED  = const(2)
     YIELDED = const(0)
-    FUNC = const(1)
-    PID = const(2)
-    STATE = const(3)
-    DUE = const(4)
+    FUNC    = const(1)
+    PID     = const(2)
+    STATE   = const(3)
+    DUE     = const(4)
+
     def __init__(self, gc_enable=True, heartbeat=None):
         self.lstThread = []                     # Entries contain [Waitfor object, function, pid, state]
         self.bStop = False
@@ -203,8 +220,8 @@ class Sched(object):
     def resume(self, pid):
         self[pid][STATE] = RUNNING
 
-# Thread list contains [Waitfor object, generator, pid, state]: Run thread to first yield to acquire 
-# a Waitfor instance and put the resultant thread onto the threadlist
+    """ Thread list contains [Waitfor object, generator, pid, state]: Run thread to first yield to acquire
+        a Waitfor instance and put the resultant thread onto the threadlist """
     def add_thread(self, func):
         if type(func) is not GeneratorType:
             raise ValueError('Threads must be added using function call syntax')
@@ -212,7 +229,7 @@ class Sched(object):
         self.lstThread.append([func.send(None), func, self.pid, RUNNING, True])
         return self.pid
 
-# Runs once then in roundrobin or when there's nothing else to do
+    # Runs once then in roundrobin or when there's nothing else to do
     def _idle_thread(self):
         if self.gc_enable and (self.last_gc == 0 or after(self.last_gc) > GCTIME):
             gc.collect()
@@ -236,21 +253,21 @@ class Sched(object):
         return waitfor.triggered()
 
     def _runthread(self, thread, priority):
-        try:                                    # Run thread, send (interrupt count, poll func value, uS overdue)
+        try:                                    # Run thread, send (interrupt count, poll func value, us overdue)
             thread[YIELDED] = thread[FUNC].send(priority)  # Store object yielded by thread
         except StopIteration:                   # The thread has terminated:
             thread[STATE] = DEAD                # Flag thread for removal
 
     def _get_thread(self):
-        p_run = None                        # priority tuple of thread to run
-        thr_run = None                      # thread to run
+        p_run = None                            # priority tuple of thread to run
+        thr_run = None                          # thread to run
         candidates = [t for t in self.lstThread if t[STATE] == RUNNING]
         for thread in candidates:
             priority = self.triggered(thread)
-            if priority is not None:        # Ignore threads waiting on time or event
-                if priority == (0,0,0):     # Roundrobin (RR)
+            if priority is not None:            # Ignore threads waiting on time or event
+                if priority == (0,0,0):         # Roundrobin (RR)
                     if thr_run is None and thread[DUE]:
-                        p_run = priority    # Assign one, don't care which
+                        p_run = priority        # Assign one, don't care which
                         thr_run = thread
                 else:
                     if p_run is None or priority > p_run:
@@ -268,7 +285,7 @@ class Sched(object):
 
     def run(self):                              # Returns if the stop method is used or all threads terminate
         while not self.bStop:
-            self.lstThread = [thread for thread in self.lstThread if thread[STATE] != DEAD] # Remove dead threads
+            self.lstThread = [thread for thread in self.lstThread if thread[STATE] != DEAD]  # Remove dead threads
             self._idle_thread()                 # Garbage collect
             if len(self.lstThread) == 0:
                 return

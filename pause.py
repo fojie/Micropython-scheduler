@@ -5,6 +5,7 @@
 import pyb
 from usched import Sched
 
+
 # Run on MicroPython board bare hardware
 # THREADS:
 
@@ -12,11 +13,13 @@ def stop(fTim, objSch):                                     # Stop the scheduler
     yield fTim
     objSch.stop()
 
+
 def robin(text):
     while True:
         pyb.delay(100)
         print(text)
         yield
+
 
 def pauser(objSched, thread):
     for _ in range(3):
@@ -29,6 +32,7 @@ def pauser(objSched, thread):
     yield 1
     objSched.stop(thread)
     print('thread 2 killed')
+
 
 # USER TEST PROGRAM
 

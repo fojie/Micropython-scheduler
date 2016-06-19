@@ -5,6 +5,7 @@
 
 from usched import Sched
 
+
 # Run on MicroPython board bare hardware
 # THREADS:
 
@@ -15,6 +16,7 @@ def subthread(lstResult):                                   # Gets a list for re
     print("Subthread end")
     lstResult[0] = True
 
+
 def waitforit(objSched):                                    # Waits forever on subthread. Could readily wait on more than one thread.
     result = [False]                                        # Result array will be changed by subthread before it terminates
     print("Waiting on thread")
@@ -22,6 +24,7 @@ def waitforit(objSched):                                    # Waits forever on s
     while not result[0]:                                    # Subthread will set element 0 True on completion
         yield                                               # In a useful application would return other results too
     print("Thread returned")
+
 
 # USER TEST PROGRAM
 # Runs to completion and terminates because all threads have ended

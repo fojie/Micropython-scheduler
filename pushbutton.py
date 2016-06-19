@@ -23,6 +23,7 @@ descriptor['debounce'] = 0.02
 descriptor['long_press_time'] = 1
 descriptor['double_click_time'] = 0.4
 
+
 class Pushbutton(object):
     def __init__(self, objSched, pinName, desc, 
             true_func = None, true_func_args = (),
@@ -50,7 +51,8 @@ class Pushbutton(object):
     def __call__(self):
         return self.buttonstate                             # Current debounced state of switch (True = pressed)
 
-    def buttoncheck(self):                                  # Generator object: thread which tests and debounces
+    ''' Generator object: thread which tests and debounces '''
+    def buttoncheck(self):
         wf = Timeout(self.desc['debounce'])
         state_id = 0
         if self.long_func:

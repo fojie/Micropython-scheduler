@@ -58,22 +58,24 @@ PINLIST = ('Y1','Y2','Y6','Y5','Y4','Y3')
 # The delays are short in the context of general runtimes and minimum likely yield delays, so won't
 # significantly impact performance. Secondly, using yield produced perceptibly slow updates to the display text.
 
+
 class LCD(object):                                          # LCD objects appear as read/write lists
     INITSTRING = (0x33, 0x32, 0x28, 0x0C, 0x06, 0x01)
     LCD_LINES = (0x80, 0xC0)                                # LCD RAM address for the 1st and 2nd line (0 and 40H)
     CHR = True
     CMD = False
-    E_PULSE = 50                                            # Timing constants in uS
+    E_PULSE = 50                                            # Timing constants in us
     E_DELAY = 50
-    def __init__(self, pinlist, scheduler, cols, rows = 2): # Init with pin nos for enable, rs, D4, D5, D6, D7
+
+    def __init__(self, pinlist, scheduler, cols, rows=2):   # Init with pin nos for enable, rs, D4, D5, D6, D7
         self.initialising = True
         self.LCD_E = pyb.Pin(pinlist[1], pyb.Pin.OUT_PP)    # Create and initialise the hardware pins
         self.LCD_RS = pyb.Pin(pinlist[0], pyb.Pin.OUT_PP)
         self.datapins = [pyb.Pin(pin_name, pyb.Pin.OUT_PP) for pin_name in pinlist[2:]]
         self.cols = cols
         self.rows = rows
-        self.lines = [""]*self.rows
-        self.dirty = [False]*self.rows
+        self.lines = [""] * self.rows
+        self.dirty = [False] * self.rows
         for thisbyte in LCD.INITSTRING:
             self.lcd_byte(thisbyte, LCD.CMD)
             self.initialising = False                       # Long delay after first byte only
@@ -94,12 +96,13 @@ class LCD(object):                                          # LCD objects appear
 
     def lcd_byte(self, bits, mode):                         # Send byte to data pins: bits = data
         self.LCD_RS.value(mode)                             # mode = True  for character, False for command
-        self.lcd_nybble(bits >>4)                           # send high bits
+        self.lcd_nybble(bits >> 4)                          # send high bits
         self.lcd_nybble(bits)                               # then low ones
 
-    def __setitem__(self, line, message):                   # Send string to display line 0 or 1
-                                                            # Strip or pad to width of display. Should use "{0:{1}.{1}}".format("rats", 20)
-        message = "%-*.*s" % (self.cols,self.cols,message)  # but micropython doesn't work with computed format field sizes
+    '''Send string to display line 0 or 1'''
+    def __setitem__(self, line, message):
+        # Strip or pad to width of display. Should use "{0:{1}.{1}}".format("rats", 20)
+        message = "%-*.*s" % (self.cols,self.cols, message) # but µP doesn't work with computed format field sizes
         if message != self.lines[line]:                     # Only update LCD if data has changed
             self.lines[line] = message                      # Update stored line
             self.dirty[line] = True                         # Flag its non-correspondence with the LCD device
@@ -107,17 +110,19 @@ class LCD(object):                                          # LCD objects appear
     def __getitem__(self, line):
         return self.lines[line]
 
-def runlcd(thislcd):                                        # Periodically check for changed text and update LCD if so
+
+def runlcd(thislcd):
+    """Periodically check for changed text and update LCD if so"""
     wf = Timeout(0.02)
     rr = Roundrobin()
-    while(True):
+    while True:
         for row in range(thislcd.rows):
             if thislcd.dirty[row]:
                 msg = thislcd[row]
                 thislcd.lcd_byte(LCD.LCD_LINES[row], LCD.CMD)
                 for thisbyte in msg:
                     thislcd.lcd_byte(ord(thisbyte), LCD.CHR)
-                    yield rr                                # Reshedule ASAP
+                    yield rr                                # Reschedule ASAP
                 thislcd.dirty[row] = False
         yield wf()                                          # Give other threads a look-in
 

@@ -40,24 +40,30 @@ class Accelerometer(object):
         self.accelhw = accelhw
         self.coords = [accelhw.x(), accelhw.y(), accelhw.z()]
 
-    def dsquared(self, xyz):                                # Return the square of the distance between this and a passed 
-        return sum(map(lambda p, q : (p-q)**2, self.coords, xyz)) # acceleration vector
+    # Return the square of the distance between this and a passed
+    def dsquared(self, xyz):
+        return sum(map(lambda p, q: (p - q) ** 2, self.coords, xyz))    # acceleration vector
 
-    def poll(self, threshold):                              # Device is noisy. Only update if change exceeds a threshold
+    # Device is noisy. Only update if change exceeds a threshold
+    def poll(self, threshold):
         xyz = [self.accelhw.x(), self.accelhw.y(), self.accelhw.z()]
         if self.dsquared(xyz) > threshold*threshold:
             self.coords = xyz
             return 1                                        # Scheduler will run the handling thread
         return None                                         # Scheduler will pass on the handler
+
     @property                                               # Convenience properties: return x, y, z
     def x(self):
         return self.coords[0]
+
     @property
     def y(self):
         return self.coords[1]
+
     @property
     def z(self):
         return self.coords[2]
+
 
 def accelthread():
     accelhw = pyb.Accel()                                   # Instantiate accelerometer hardware
@@ -70,6 +76,7 @@ def accelthread():
             print("Value x:{:3d} y:{:3d} z:{:3d}".format(accel.x, accel.y, accel.z))
         if reason[2]:
             print("Timeout waiting for accelerometer change")
+
 
 # USER TEST PROGRAM
 
