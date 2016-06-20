@@ -15,7 +15,7 @@
 # 
 # Date   : 26/07/2012
 
-# Adapted to LCD with 4 * 20 chars 2016-06-19 by Folke Berglund
+# Adapted to also handle LCD with 4 rows * 20 chars 2016-06-19 by Folke Berglund
 
 import pyb
 from usched import Timeout, Roundrobin
@@ -47,7 +47,7 @@ PINLIST = ('Y3','Y4','Y5','Y6','Y7','Y8')
 # 0x0C: Display on/off: D = 1 display on C, B = 0 cursor off, blink off
 # 0x06: Entry mode set: ID = 1 increment S = 0 display shift??
 # 0x01: Clear display, set DDRAM address = 0
-# Original code had timing delays of 50uS. Testing with the Pi indicates that time.sleep() can't issue delays shorter
+# Original code had timing delays of 50 us. Testing with the Pi indicates that time.sleep() can't issue delays shorter
 # than about 250 us. There also seems to be an error in the original code in that the datasheet specifies a delay of
 # >4.1mS after the first 3 is sent. To simplify I've imposed a delay of 5ms after each initialisation pulse: the time to
 # initialise is hardly critical. The original code worked, but I'm happier with something that complies with the spec.
@@ -64,7 +64,7 @@ PINLIST = ('Y3','Y4','Y5','Y6','Y7','Y8')
 
 class LCD(object):                                          # LCD objects appear as read/write lists
     INITSTRING = (0x33, 0x32, 0x28, 0x0C, 0x06, 0x01)
-    LCD_LINES = (0x80, 0xC0, 0x94, 0xD4)                    # LCD RAM address for the 1st to 4th line
+    LCD_LINES  = (0x80, 0xC0, 0x94, 0xD4)                    # LCD RAM address for the 1st to 4th line
     CHR = True
     CMD = False
     E_PULSE = 50 - 22                                       # Timing constants in us (FB: 22 us overhead)
@@ -73,7 +73,7 @@ class LCD(object):                                          # LCD objects appear
     def __init__(self, pinlist, scheduler, cols, rows=4):   # Init with pin nos for enable, rs, D4, D5, D6, D7
         self.initialising = True
         #pyb.Pin(pinlist[1]).value(False)                    # FB: Assure pin = low when set to output
-        self.LCD_E = pyb.Pin(pinlist[1], pyb.Pin.OUT_PP)    # Create and initialise the hardware pins
+        self.LCD_E  = pyb.Pin(pinlist[1], pyb.Pin.OUT_PP)   # Create and initialise the hardware pins
         self.LCD_RS = pyb.Pin(pinlist[0], pyb.Pin.OUT_PP)
         self.datapins = [pyb.Pin(pin_name, pyb.Pin.OUT_PP) for pin_name in pinlist[2:]]
         self.cols = cols
@@ -104,12 +104,15 @@ class LCD(object):                                          # LCD objects appear
         self.lcd_nybble(bits >> 4)                          # send high bits
         self.lcd_nybble(bits)                               # then low ones
 
-    '''Send string to display row 0--3'''
-    def __setitem__(self, line, message):
-        # Strip or pad to width of display. Should use "{0:{1}.{1}}".format("rats", 20)
-        message = "%-*.*s" % (self.cols,self.cols, message) # but µP doesn't work with computed format field sizes
+    '''Send string to display line 0--3. Updated by "runlcd" after dirty flag set'''
+    def __setitem__(self, line, message, fill_trim=True):
+        # Strip or pad to width of display. Should use "{0:{1}.{1}}".format("rats", self.cols)
+        # message = "%-*.*s" % (self.cols,self.cols, message) # but µP doesn't work with computed format field sizes
         if message != self.lines[line]:                     # Only update LCD if data has changed
-            self.lines[line] = message                      # Update stored line
+            if fill_trim:
+                self.lines[line] = "{0:{1}.{1}}".format(message, self.cols)     # Update stored line filled or trimmed
+            else:
+                self.lines[line] = message                                      # Update stored line; No fill or trim
             self.dirty[line] = True                         # Flag its non-correspondence with the LCD device
 
     def __getitem__(self, line):
@@ -117,12 +120,12 @@ class LCD(object):                                          # LCD objects appear
 
 
 def runlcd(thislcd):
-    """Periodically check for changed text and update LCD if so"""
+    """Periodically check for changed text and update LCD if dirty flag set"""
     wf = Timeout(0.02)
     rr = Roundrobin()
     while True:
         for row in range(thislcd.rows):
-            if thislcd.dirty[row]:
+            if thislcd.dirty[row]:                          # Need to update LCD from thislcd[row] ?
                 msg = thislcd[row]
                 thislcd.lcd_byte(LCD.LCD_LINES[row], LCD.CMD)
                 for thisbyte in msg:
