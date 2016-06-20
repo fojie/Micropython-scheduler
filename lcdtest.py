@@ -3,14 +3,11 @@
 # Copyright Peter Hinch 2016 Released under the MIT license
 # Display must use the Hitachi HD44780 controller. This demo assumes a 16*2 character unit.
 
-# Folke Berglund: LCD configuration specified as LCD_NR_ROWS & LCD_NR_COLS
+# Folke Berglund: LCD configuration specified when creating LCD object
 
 import pyb
 from usched import Sched
 from lcdthread import LCD, PINLIST                          # Library supporting Hitachi LCD module
-
-LCD_NR_ROWS = const(4)
-LCD_NR_COLS = const(20)
 
 # HARDWARE
 # Micropython board with LCD attached using the 4-wire data interface. See lcdthread.py for the
@@ -26,12 +23,9 @@ def stop(fTim, objSch):                                     # Stop the scheduler
 
 
 def lcd_thread(mylcd):
-
-    global LCD_NR_ROWS
-
     mylcd[0] = "MicroPython"
     while True:
-        for row in range(1, LCD_NR_ROWS):
+        for row in range(1, mylcd.rows):
             mylcd[row] = "{:11d} us".format(pyb.micros())
             yield 1
 
@@ -40,13 +34,10 @@ def lcd_thread(mylcd):
 # Runs forever unless you pass a number of seconds
 
 def test(duration=0):
-
-    global LCD_NR_ROWS, LCD_NR_COLS
-
     if duration:
         print("Test LCD display for {:d} seconds".format(duration))
     objSched = Sched()
-    lcd0 = LCD(PINLIST, objSched, cols=LCD_NR_COLS, rows=LCD_NR_ROWS)
+    lcd0 = LCD(PINLIST, objSched, cols=20, rows=4)          # Init lcd object with correct nr of cols and rows
     objSched.add_thread(lcd_thread(lcd0))
     if duration:
         objSched.add_thread(stop(duration, objSched))
